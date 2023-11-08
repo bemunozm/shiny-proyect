@@ -52,7 +52,12 @@ class UserController extends Controller
         $current_id = auth()->id();
         $id = User::find($user);
         $resume = Resume::where('user_id', $user)->first();
-        return view('laravel-examples/user-profile', compact('resume', 'id', 'current_id'));
+        // Usando la función now()
+        $fechaActual = now();
+
+        // O usando Carbon::now()
+        $fechaActual = Carbon::now();
+        return view('laravel-examples/user-profile', compact('resume', 'id', 'current_id', 'fechaActual'));
     }
 
     /**
