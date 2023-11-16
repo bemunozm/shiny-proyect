@@ -123,7 +123,7 @@
                   @enderror
                 </div>
                 <div class="mb-3">
-                <input type="date" class="form-control" placeholder="Fecha de nacimiento" name="birthdate" id="birthdate" value="{{ old('birthday') }}">
+                <input type="date" class="form-control" placeholder="Fecha de nacimiento" name="birthdate" id="birthdate" value="{{ old('birthday') }}" max="{{ date('Y-m-d') }}">
                 @error('birthdate')
                     <p class="text-danger text-xs mt-2">{{ $message }}</p>
                 @enderror

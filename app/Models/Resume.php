@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class Resume extends Model
 {
@@ -14,7 +15,7 @@ class Resume extends Model
 
     use HasFactory;
 
-    protected $fillable = ['user_id', 'replacement_id'];
+    protected $guarded = [];
     public function user(): BelongsTo{
         return $this->belongsTo(User::class);
     }
@@ -27,19 +28,20 @@ class Resume extends Model
         return $this->hasMany(Experience::class);
     }
 
-    public function educations(): HasMany{
-        return $this->hasMany(Education::class);
+    public function educations(): BelongsToMany{
+        return $this->belongsToMany(Education::class)->withPivot('id','status', 'start_date', 'finish_date', 'weight');
     }
 
-    public function languages(): HasMany{
-        return $this->hasMany(Language::class);
+    public function languages(): BelongsToMany{
+        return $this->belongsToMany(Language::class)->withPivot('id','written_level', 'oral_level', 'weight');
     }
 
-    public function skills(): HasMany{
-        return $this->hasMany(Skill::class);
+    public function skills(): BelongsToMany{
+        return $this->belongsToMany(Skill::class)->withPivot('id', 'weight');
     }
 
     public function replacements(): BelongsToMany{
-        return $this->belongsToMany(Replacement::class)->withPivot('hired');
+        return $this->belongsToMany(Replacement::class);
     }
+
 }

@@ -50,7 +50,7 @@ class CompanyController extends Controller
             'verifier_code' => $request->verifier_code,
             'street_name' => $request->street_name,
             'number' => $request->number,
-            'zip_code' => $request->zip_code,
+            'city' => $request->city,
             'phone' => $request->phone,
             'industry' => $request->industry,
             'user_id' => $user_id,

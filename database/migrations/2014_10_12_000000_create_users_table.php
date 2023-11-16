@@ -22,7 +22,7 @@ class CreateUsersTable extends Migration
             $table->string('last_name');
             $table->bigInteger('phone');
             $table->string('email')->unique();
-            $table->string('country')->nullable();
+            $table->string('province')->nullable();
             $table->string('state')->nullable();
             $table->string('city')->nullable();
             $table->enum('gender', ['Masculino', 'Femenino', 'Otro']);
@@ -30,7 +30,6 @@ class CreateUsersTable extends Migration
             $table->string('marital_status');
             $table->string('password');
             $table->enum('type', ['Postulante', 'Empresa']);
-            
             $table->rememberToken();
             $table->timestamps();
         });

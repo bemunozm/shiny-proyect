@@ -12,27 +12,14 @@ class Replacement extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'job_name',
-        'job_area',
-        'job_sub_area',
-        'country',
-        'state',
-        'city',
-        'address',
-        'job_description',
-        'min_salary',
-        'max_salary',
-        'min_experience',
-        'company_id'
-    ];
+    protected $guarded = [];
 
     public function company(): BelongsTo{
         return $this->belongsTo(Company::class);
     }
 
     public function resumes(): BelongsToMany{
-        return $this->belongsToMany(Resume::class)->withPivot('hired');
+        return $this->belongsToMany(Resume::class);
     }
 
     public function resume(): HasOne{

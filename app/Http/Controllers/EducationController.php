@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Education;
 use App\Models\Resume;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EducationController extends Controller
 {
@@ -29,23 +30,38 @@ class EducationController extends Controller
      */
     public function store(Request $request)
     {
-        $user_id = $request->input('user_id');
-        $resume = Resume::where('user_id', $user_id)->first();
+        // Buscar o crear la entrada en la tabla 'education'
+        $education = Education::firstOrCreate(
+            [
+                'institution' => $request->institution,
+                'career' => $request->career,
+                'type_of_study' => $request->type_of_study,
+                'area_of_study' => $request->area_of_study,
+                'subarea_of_study' => $request->subarea_of_study,
+            ],
+            [
 
-        Education::create([
-            'career' => $request->career,
-            'country' => $request->country,
-            'type_of_study' => $request->type_of_study,
-            'area_of_study' => $request->area_of_study,
-            'institution' => $request->institution,
-            'status' => $request->status,
-            'start_date' => $request->start_date,
-            'finish_date' => $request->finish_date,
-            'resume_id' => $resume->id
-        ]);
+            ]
+        );
+
+ 
+        $resumeId = auth()->user()->resume->id; 
+
+        DB::table('education_resume')->updateOrInsert(
+            [
+                'resume_id' => $resumeId,
+                'education_id' => $education->id
+            ],
+            [
+                'status' => $request->status,
+                'start_date' => $request->start_date,
+                'finish_date' => $request->finish_date
+            ]
+        );
 
         return redirect()->route('user-profile.index');
     }
+
 
     /**
      * Display the specified resource.
@@ -74,10 +90,11 @@ class EducationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
-    {
-        $var = Education::find($id);
-        $var->delete();
-        return redirect()->route('user-profile.index');
-    }
+    public function destroy($educationResumeId)
+{
+    // Encuentra el registro de la tabla pivote 'education_resume' por su ID y elimínalo
+    $pivot = DB::table('education_resume')->where('id', $educationResumeId)->delete();
+
+    return redirect()->route('user-profile.index');
+}
 }

@@ -17,7 +17,7 @@
                 <form method="GET" action="{{ route('resume.filter') }}">
                         <div class="row">
                             <div class="col">
-                                <input type="text" name="country" class="form-control" placeholder="País">
+                                <input type="text" name="state" class="form-control" placeholder="Región">
                             </div>
                             <div class="col">
                                 <input type="text" name="type_of_study" class="form-control" placeholder="Estudios">
@@ -49,7 +49,7 @@
                                     </th>
                                     
                                     <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Pais
+                                        Región
                                     </th>
                                     
                                     <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
@@ -79,7 +79,7 @@
                                             {{ $resume->educations->first()->career ?? 'Sin Estudios'  }}
                                         </td>
                                         <td class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            {{ $resume->user->country }}
+                                            {{ $resume->user->state }}
                                         </td>
                                         <td class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                             @if($resume->skills->isNotEmpty())

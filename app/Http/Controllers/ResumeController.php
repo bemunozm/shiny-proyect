@@ -17,15 +17,15 @@ class ResumeController extends Controller
     public function userManagement(Request $request)
     {
     // Obtener los criterios de búsqueda desde la URL
-    $country = $request->input('country');
+    $state = $request->input('state');
     $typeOfStudy = $request->input('type_of_study');
     $skill = $request->input('skill');
 
     // Consulta base de datos para obtener los resultados filtrados
     $resumes = Resume::query()
-        ->when($country, function ($query) use ($country) {
-            $query->whereHas('user', function ($subquery) use ($country) {
-                $subquery->where('country', 'like', '%' . $country . '%');
+        ->when($state, function ($query) use ($state) {
+            $query->whereHas('user', function ($subquery) use ($state) {
+                $subquery->where('state', 'like', '%' . $state . '%');
             });
         })
         ->when($typeOfStudy, function ($query) use ($typeOfStudy) {

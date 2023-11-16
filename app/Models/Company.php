@@ -19,7 +19,7 @@ class Company extends Model
         'verifier_code' ,
         'street_name' ,
         'number' ,
-        'zip_code' ,
+        'city' ,
         'phone' ,
         'industry', 
         'user_id' 

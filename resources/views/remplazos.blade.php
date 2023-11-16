@@ -14,7 +14,7 @@
             <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">NOMBRES</th>
             <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">PAIS</th>
             <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">CONTACTO</th>
-            
+            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">AFINIDAD</th>
         </tr>
     </thead>
     <tbody>
@@ -46,6 +46,20 @@
 
                 </td>
 
+                <td>
+                    <div class="progress-wrapper">
+                      <div class="progress-info">
+                        <div class="progress-percentage">
+                          <!-- Calcular el porcentaje y mostrarlo -->
+                          <span class="text-sm font-weight-normal">{{ round(($resume->affinityScore * 100)/ $maximumScore, 2) }}%</span>
+                        </div>
+                      </div>
+                      <div class="progress">
+                        <!-- Establecer el valor de 'aria-valuenow' y el ancho de la barra de progreso según el porcentaje -->
+                        <div class="progress-bar bg-gradient-success" role="progressbar" aria-valuenow="{{ round(($resume->affinityScore * 100)/ $maximumScore, 2) }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ round(($resume->affinityScore / $maximumScore) * 100, 2) }}%;"></div>
+                      </div>
+                    </div>
+                </td>
                 
                 <td class="align-middle">
                     
@@ -80,7 +94,7 @@
                       
                 </td>--}}
             </tr>
-        @endforeach-
+        @endforeach
     </tbody>
 </table>
     </div>

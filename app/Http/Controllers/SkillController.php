@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Resume;
 use App\Models\Skill;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SkillController extends Controller
 {
@@ -29,15 +30,20 @@ class SkillController extends Controller
      */
     public function store(Request $request)
     {
-        $user_id = $request->input('user_id');
-        $resume = Resume::where('user_id', $user_id)->first();
+    $user_id = $request->input('user_id');
+    $skillName = $request->input('skill_name');
 
-        Skill::create([
-            'name' => $request->name,
-            'resume_id' => $resume->id
-        ]);
+    $resume = Resume::where('user_id', $user_id)->firstOrFail();
 
-        return redirect()->route('user-profile.index');
+    // Busca si ya existe la habilidad, si no, la crea.
+    $skill = Skill::firstOrCreate(['name' => $skillName]);
+
+    // Asignar la habilidad al currículum del usuario si aún no está asignada.
+    if (!$resume->skills()->find($skill->id)) {
+        $resume->skills()->attach($skill->id);
+    }
+
+    return redirect()->route('user-profile.index');
     }
 
     /**
@@ -69,8 +75,9 @@ class SkillController extends Controller
      */
     public function destroy(string $id)
     {
-        $var = Skill::find($id);
-        $var->delete();
+        // Encuentra el registro de la tabla pivote por su ID y elimínalo
+        $pivot = DB::table('resume_skill')->where('id', $id)->delete();
+
         return redirect()->route('user-profile.index');
     }
 

@@ -46,7 +46,7 @@
                                         </g>
                                     </svg>
 
-                                    </svg>
+                          
                                     <span class="ms-1">{{ __('Empresa') }}</span>
                                 </a>
                             </li>
@@ -153,9 +153,9 @@
                                         @enderror
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label for="zip_code">Codigo Postal</label>
-                                            <input type="number" class="form-control" placeholder="1100000" name="zip_code" id="zip_code" aria-label="zip_code" value="{{$id->company->zip_code}}">
-                                        @error('zip_code')
+                                            <label for="City">Ciudad</label>
+                                            <input type="String" class="form-control" placeholder="Iquique" name="City" id="City" aria-label="City" value="{{$id->company->city}}">
+                                        @error('city')
                                             <p class="text-danger text-xs mt-2">{{ $message }}</p>
                                         @enderror
                                         </div>
@@ -269,27 +269,36 @@
                                         </div>
                                         <br/><h5>Informacion Residencia</h5><br/>
                                         {{--INFORMACION DE RESIDENCIA--}}
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="country">{{ __('Pais') }}</label>
-                                                    
-                                                    <input type="text" id="country" name="country" class="form-control" value="{{$id->country}}" placeholder="Chile">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="state">{{ __('Region') }}</label>
-                                                    <input type="text" id="state" name="state" class="form-control" value="{{$id->state}}" placeholder="Tarapaca">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="city">{{ __('Ciudad') }}</label>
-                                                    <input type="text" id="city" name="city" class="form-control" value="{{$id->city}}" placeholder="Iquique">
-                                                </div>
-                                            </div>
-                                        </div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="state_select">{{ __('Region') }}</label>
+            <select id="state_select" name="state" class="form-control">
+                <option value="">Seleccione una región</option>
+                <!-- Las opciones se llenarán dinámicamente -->
+            </select>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="province_select">{{ __('Provincia') }}</label>
+            <select id="province_select" name="province" class="form-control">
+                <option value="">Seleccione una provincia</option>
+                <!-- Las opciones se llenarán dinámicamente -->
+            </select>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="city_select">{{ __('Ciudad') }}</label>
+            <select id="city_select" name="city" class="form-control">
+                <option value="">Seleccione una ciudad</option>
+                <!-- Las opciones se llenarán dinámicamente -->
+            </select>
+        </div>
+    </div>
+</div>
+
 
                                         <br/><h5>Otra Informacion</h5><br/>
                                         {{--OTRA INFORMACION--}}
@@ -331,6 +340,95 @@
 
 
 <script src="ruta/a/bootstrap.min.js"></script>
+<script> 
+$(document).ready(function() {
+    // Cargar regiones al inicializar
+    loadStates();
+
+    // Evento change para el selector de Región (State)
+    $('#state_select').change(function() {
+        var stateId = $(this).val();
+        if (stateId) {
+            loadProvinces(stateId);
+        } else {
+            $('#province_select').empty().append('<option value="">Seleccione una provincia</option>');
+            $('#city_select').empty().append('<option value="">Seleccione una ciudad</option>');
+        }
+    });
+
+    // Evento change para el selector de Provincia (Province)
+    $('#province_select').change(function() {
+        var provinceId = $(this).val();
+        if (provinceId) {
+            loadCities(provinceId);
+        } else {
+            $('#city_select').empty().append('<option value="">Seleccione una ciudad</option>');
+        }
+    });
+
+    // Función para cargar las regiones
+    function loadStates() {
+        $.ajax({
+            url: "{{ route('searchState') }}",
+            dataType: "json",
+            success: function(data) {
+                var stateSelect = $('#state_select');
+                stateSelect.empty().append('<option value="">Seleccione una región</option>');
+                $.each(data, function(i, item) {
+                    stateSelect.append(new Option(item.name, item.id));
+                });
+                // Si hay una región preseleccionada, cárgala aquí
+                stateSelect.val("{{$id->state}}");
+                if (stateSelect.val()) {
+                    loadProvinces(stateSelect.val());
+                }
+            }
+        });
+    }
+
+    // Función para cargar las provincias basadas en la región seleccionada
+    function loadProvinces(stateId) {
+    $.ajax({
+        url: "/search-province",
+        type: "GET",
+        dataType: "json",
+        data: { region_id: stateId }, // Cambiado de 'state_id' a 'region_id'
+        success: function(data) {
+            var provinceSelect = $('#province_select');
+            provinceSelect.empty().append('<option value="">Seleccione una provincia</option>');
+            $.each(data, function(i, item) {
+                provinceSelect.append(new Option(item.name, item.id)); // 'item.name' está bien porque usas 'provincia as name'
+            });
+            provinceSelect.val("{{$id->province}}"); // Set preselected province if any
+            if (provinceSelect.val()) {
+                loadCities(provinceSelect.val()); // Automatically load cities for the preselected province
+            }
+        }
+    });
+}
+
+
+
+    // Función para cargar las ciudades basadas en la provincia seleccionada
+    function loadCities(provinceId) {
+        $.ajax({
+            url: "{{ route('searchCity') }}",
+            dataType: "json",
+            data: { province_id: provinceId },
+            success: function(data) {
+                var citySelect = $('#city_select');
+                citySelect.empty().append('<option value="">Seleccione una ciudad</option>');
+                $.each(data, function(i, item) {
+                    citySelect.append(new Option(item.name, item.id));
+                });
+                // Si hay una ciudad preseleccionada, cárgala aquí
+                citySelect.val("{{$id->city}}");
+            }
+        });
+    }
+});
+
+</script>
 @endsection
 
 <!-- MODALS DE LA PAGINA DE AQUI PARA ABAJO MI PANA RABBIT  -->

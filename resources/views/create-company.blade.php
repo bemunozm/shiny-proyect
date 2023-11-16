@@ -1,4 +1,8 @@
 @extends('layouts.app')
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -91,9 +95,9 @@
                       @enderror
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="zip_code">Codigo Postal</label>
-                        <input type="number" class="form-control" placeholder="1100000" name="zip_code" id="zip_code" aria-label="zip_code" value="{{ old('zip_code') }}">
-                      @error('zip_code')
+                        <label for="city">Ciudad</label>
+                        <input type="text" class="form-control" placeholder="Iquique" name="city" id="city" aria-label="city" value="{{ old('city') }}">
+                      @error('city')
                         <p class="text-danger text-xs mt-2">{{ $message }}</p>
                       @enderror
                     </div>

@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\Comuna;
 use App\Models\Education;
 use App\Models\Replacement;
 use App\Models\Language;
+use App\Models\Provincia;
+use App\Models\Region;
 use App\Models\Resume;
 use App\Models\Skill;
 use Illuminate\Http\Request;
@@ -32,8 +35,8 @@ class ReplacementController extends Controller
         if ($request->filled('job_name')) {
             $query->where('job_name', 'like', '%' . $request->job_name . '%');
         }
-        if ($request->filled('country')) {
-            $query->where('country', $request->country);
+        if ($request->filled('province')) {
+            $query->where('province', $request->province);
         }
         if ($request->filled('state')) {
             $query->where('state', $request->state);
@@ -45,7 +48,7 @@ class ReplacementController extends Controller
         $replacements = $query->get();
 
         // Pasar las colecciones adicionales si son necesarias para los dropdowns
-        $countries = Replacement::distinct()->pluck('country');
+        $countries = Replacement::distinct()->pluck('province');
         $states = Replacement::distinct()->pluck('state');
         $cities = Replacement::distinct()->pluck('city');
 
@@ -68,28 +71,33 @@ class ReplacementController extends Controller
      */
     public function store(Request $request)
     {
-        
+       
         $user_id = $request->input('user_id');
         $company = Company::where('user_id', $user_id)->firstOrFail();
     
-        // Inicia una transacción para asegurarte de que todas las operaciones se completen con éxito o ninguna.
+        $provinceName = Provincia::find($request->input('province_name'))->provincia;
+        
+        $stateName = Region::find($request->input('state_name'))->region;
+        $cityName = Comuna::find($request->input('city_name'))->comuna;
         
         
         
-            $replacement = Replacement::create([
-                'job_name' => $request->job_name,
-                'job_area' => $request->job_area,
-                'job_sub_area' => $request->job_sub_area,
-                'country' => $request->country,
-                'state' => $request->state,
-                'city' => $request->city,
-                'address' => $request->address,
-                'job_description' => $request->job_description,
-                'min_salary' => $request->min_salary,
-                'max_salary' => $request->max_salary,
-                'min_experience' => $request->min_experience,
-                'company_id' => $company->id
-            ]);
+        $replacement = Replacement::create([
+            'job_name' => $request->job_name,
+            'job_area' => $request->job_area,
+            'job_sub_area' => $request->job_sub_area,
+            'province' => $provinceName,
+            'state' => $stateName,
+            'city' => $cityName,
+            'address' => $request->address,
+            'modality' => $request->modality,
+            'job_description' => $request->job_description,
+            'min_salary' => $request->min_salary,
+            'max_salary' => $request->max_salary,
+            'min_experience' => $request->min_experience,
+            'experience_weight' => $request->experience_weight,
+            'company_id' => $company->id
+        ]);
     
             $resume = Resume::create([
                 'replacement_id' => $replacement->id,
@@ -98,33 +106,48 @@ class ReplacementController extends Controller
     
             // Educación
             foreach ($request->input('education', []) as $educationData) {
-                // Asegúrate de validar y limpiar $educationData antes de insertarlo en la base de datos.
-                Education::create([
+                $education = Education::firstOrCreate([
+                    'institution' => $educationData['institution'],
                     'career' => $educationData['career'],
                     'type_of_study' => $educationData['type_of_study'],
+                    'area_of_study' => $educationData['area_of_study'],
+                    'subarea_of_study' => $educationData['subarea_of_study'],
+                ]);
+
+                // ... otros campos del pivote si existen ...
+                $resume->educations()->attach($education->id, [
                     'status' => $educationData['status'],
-                    'resume_id' => $resume->id
+                    'weight' => $educationData['weight'],
+                    // 'start_date' => $educationData['start_date'],
+                    // 'finish_date' => $educationData['finish_date'],
                 ]);
             }
             
     
             // Idiomas
             foreach ($request->input('languages', []) as $languageData) {
-                Language::create([
+                $language = Language::firstOrCreate([
                     'name' => $languageData['name'],
+                    // otros campos que definen de manera única el idioma
+                ]);
+            
+                $resume->languages()->attach($language->id, [
                     'written_level' => $languageData['written_level'],
                     'oral_level' => $languageData['oral_level'],
-                    'resume_id' => $resume->id
+                    'weight' => $languageData['weight'],
                 ]);
             }
             
     
             // Habilidades
             foreach ($request->input('skills', []) as $skillData) {
-                Skill::create([
+                $skill = Skill::firstOrCreate([
                     'name' => $skillData['name'],
-                    // Agrega el resto de campos aquí si los hay.
-                    'resume_id' => $resume->id
+                    // otros campos que definen de manera única la habilidad
+                ]);
+            
+                $resume->skills()->attach($skill->id, [
+                    'weight' => $skillData['weight'], // Aquí se asigna la ponderación
                 ]);
             }
             
@@ -138,7 +161,8 @@ class ReplacementController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $replacement = Replacement::find($id);
+        $replacement = Replacement::with('resume.educations', 'resume.skills', 'resume.languages')->find($id);
+
         if ($request->routeIs('ver.empleo')) {
             
             return view('ver-empleo', compact('replacement'));
@@ -191,76 +215,135 @@ class ReplacementController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
-    {
-            
-            $replacement = Replacement::findOrFail($id);
-            
-            $replacement->update($request->only([
-                'job_name',
-                'job_area',
-                'job_sub_area',
-                'country',
-                'state',
-                'city',
-                'address',
-                'job_description',
-                'min_salary',
-                'max_salary',
-                'min_experience'
-            ]));
-    
-            $resume = $replacement->resume; // Asumiendo que hay una relación directa replacement->resume
-    
-            $resume = $replacement->resume; // Asumiendo que hay una relación directa replacement->resume
+{
+    $replacement = Replacement::findOrFail($id);
+    $provinceName = Provincia::find($request->input('province_name'))->provincia;
+    $stateName = Region::find($request->input('state_name'))->region;
+    $cityName = Comuna::find($request->input('city_name'))->comuna;
 
-            // Actualiza education
-            foreach ($request->education as $educationData) { // Corregido a 'education'
-                if (isset($educationData['id'])) {
-                    $resume->educations()->updateOrCreate(
-                        ['id' => $educationData['id']], // Asegurándose de que el 'id' esté establecido
-                        $educationData
-                    );
-                }
-            }
-        
-            // Actualiza languages
-            foreach ($request->languages as $languageData) {
-                if (isset($languageData['id'])) {
-                    $resume->languages()->updateOrCreate(
-                        ['id' => $languageData['id']],
-                        $languageData
-                    );
-                }
-            }
-        
-            // Actualiza skills
-            foreach ($request->skills as $skillData) {
-                if (isset($skillData['id'])) {
-                    $resume->skills()->updateOrCreate(
-                        ['id' => $skillData['id']],
-                        $skillData
-                    );
-                }
-            }
-        
-    
-        return redirect()->route('replacement.index')->with('success', 'Replacement actualizado con éxito');
+    $replacementData = [
+        'job_name' => $request->job_name,
+        'job_area' => $request->job_area,
+        'job_sub_area' => $request->job_sub_area,
+        'province' => $provinceName,
+        'state' => $stateName,
+        'city' => $cityName,
+        'address' => $request->address,
+        'job_description' => $request->job_description,
+        'min_salary' => $request->min_salary,
+        'max_salary' => $request->max_salary,
+        'min_experience' => $request->min_experience,
+    ];
+
+    // Actualiza los datos del Replacement
+    $replacement->update($replacementData);
+
+    $resume = $replacement->resume;
+
+    // Actualiza education
+    foreach ($request->education as $educationData) {
+        $education = Education::firstOrCreate([
+            'institution' => $educationData['institution'],
+            'career' => $educationData['career'],
+            'type_of_study' => $educationData['type_of_study'],
+            'area_of_study' => $educationData['area_of_study'],
+            'subarea_of_study' => $educationData['subarea_of_study'],
+        ]);
+
+        // Obtén la id del education (ya sea existente o recién creado)
+        $educationId = $education->id;
+
+        // Busca la combinación de education y resume
+        $resumeEducation = $resume->educations()
+            ->wherePivot('education_id', $educationId)
+            ->first();
+
+        // Asigna o actualiza los datos de pivote
+        if ($resumeEducation) {
+            $resumeEducation->pivot->update([
+                'status' => $educationData['status'],
+                // Agrega otros campos de pivote si es necesario
+            ]);
+        } else {
+            // Si no existe la combinación, crea la relación de pivote
+            $resume->educations()->attach($educationId, [
+                'status' => $educationData['status'],
+                // Agrega otros campos de pivote si es necesario
+            ]);
+        }
     }
+
+    // Actualiza languages
+    foreach ($request->languages as $languageData) {
+        $language = Language::firstOrCreate([
+            'name' => $languageData['name'],
+            // Otros campos que definen de manera única el idioma
+        ]);
+
+        // Obtén la id del language (ya sea existente o recién creado)
+        $languageId = $language->id;
+
+        // Busca la combinación de language y resume
+        $resumeLanguage = $resume->languages()
+            ->wherePivot('language_id', $languageId)
+            ->first();
+
+        // Asigna o actualiza los datos de pivote
+        if ($resumeLanguage) {
+            $resumeLanguage->pivot->update([
+                'written_level' => $languageData['written_level'],
+                'oral_level' => $languageData['oral_level'],
+                // Agrega otros campos de pivote si es necesario
+            ]);
+        } else {
+            // Si no existe la combinación, crea la relación de pivote
+            $resume->languages()->attach($languageId, [
+                'written_level' => $languageData['written_level'],
+                'oral_level' => $languageData['oral_level'],
+                // Agrega otros campos de pivote si es necesario
+            ]);
+        }
+    }
+
+    // Actualiza skills
+    foreach ($request->skills as $skillData) {
+        $skill = Skill::firstOrCreate([
+            'name' => $skillData['name'],
+            // Otros campos que definen de manera única la habilidad
+        ]);
+
+        // Obtén la id del skill (ya sea existente o recién creado)
+        $skillId = $skill->id;
+
+        // Verifica si el skill ya está relacionado con el resume
+        if (!$resume->skills->contains($skillId)) {
+            // Si no está relacionado, crea la relación
+            $resume->skills()->attach($skillId);
+        }
+        // No hay datos de pivote adicionales mencionados para habilidades
+    }
+
+    return redirect()->route('replacement.index')->with('success', 'Replacement actualizado con éxito');
+}
+
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
-    {
-        // Encontrar el Replacement junto con su Resume asociado
+{
+    // Encontrar el Replacement junto con su Resume asociado
     $replacement = Replacement::with('resume.languages', 'resume.skills', 'resume.educations')->find($id);
 
     if ($replacement) {
         // Si el Replacement tiene un Resume asociado, eliminar sus relaciones
         if ($replacement->resume) {
-            $replacement->resume->languages()->delete();
-            $replacement->resume->skills()->delete();
-            $replacement->resume->educations()->delete();
+            $replacement->resume->languages()->detach();
+            $replacement->resume->skills()->detach();
+
+            // Para Educations, si es una relación uno a muchos, utiliza delete()
+            // Si es muchos a muchos, utiliza detach()
+            $replacement->resume->educations()->detach(); // o detach(), según tu modelo de datos
 
             // Después de eliminar las relaciones, eliminar el Resume
             $replacement->resume->delete();
@@ -274,7 +357,8 @@ class ReplacementController extends Controller
         // Si el Replacement no existe
         return redirect()->route('replacement.index')->with('error', 'El registro no existe.');
     }
-    }
+}
+
     public function destroyApplication($replacementId)
 {
     $userId = auth()->id();
@@ -287,7 +371,7 @@ class ReplacementController extends Controller
     public function mostrar($id){
         $replacement = Replacement::with(['resumes.user', 'resumes.languages', 'resumes.skills', 'resumes.educations'])->find($id);
         
-
+        
         if (!$replacement || !$replacement->resume) {
             // Manejar el caso de que no haya un resume ideal
             // Puedes decidir redirigir a una página de error o lanzar una excepción
@@ -297,7 +381,8 @@ class ReplacementController extends Controller
         
         // Asumimos que el replacement tiene un resume que define el criterio ideal.
         $idealResume = $replacement->resume; // Asumimos que esta relación está definida en el modelo.
-    
+        $maximumScore = $this->calculateMaximumScore($idealResume);
+        
         $sortedResumes = $replacement->resumes->map(function ($resume) use ($idealResume) {
             // Comparar el resume con el idealResume y calcular un puntaje de afinidad.
             $affinityScore = $this->calculateAffinityScore($resume, $idealResume);
@@ -307,103 +392,164 @@ class ReplacementController extends Controller
             
             return $resume;
         })->sortByDesc('affinityScore');
-    
+
         // Retornar la vista con los resumes ordenados por afinidad
-        return view('remplazos', ['replacement' => $replacement, 'sortedResumes' => $sortedResumes]);
+        return view('remplazos', ['replacement' => $replacement, 'sortedResumes' => $sortedResumes, 'maximumScore' => $maximumScore]);
+    }
+
+    private function calculateMaximumScore($idealResume) {
+        $maxScore = 0;
+        
+        // Supongamos que la experiencia tiene una puntuación máxima de 10, ajusta según tu aplicación
+        $maxScore += 12 * $idealResume->experience_weight;
+        
+        switch ($idealResume->replacement->modality) {
+            case 'Presencial':
+                $maxScore += 2;
+                $maxScore += 4;
+                $maxScore += 6;
+                break;
+            case 'Virtual':
+                // Sin puntaje para virtual
+                $maxScore += 0;
+                break;
+            case 'Hibrido':
+                // Mitad de puntaje para híbrido
+                $maxScore += 1;
+                $maxScore += 2;
+                $maxScore += 3;
+                break;
+        }
+        
+        // Puntuación máxima por idiomas
+        foreach ($idealResume->languages as $language) {
+            $weight = $language->pivot->weight;
+            // Supongamos que cada idioma tiene una puntuación máxima de 15, ajusta según tu aplicación
+            $maxScore += 13 * $weight;
+        }
+        
+        // Puntuación máxima por habilidades
+        foreach ($idealResume->skills as $skill) {
+            $weight = $skill->pivot->weight;
+            // Supongamos que cada habilidad tiene una puntuación máxima de 5, ajusta según tu aplicación
+            $maxScore += 12 * $weight;
+        }
+        
+        // Puntuación máxima por educación
+        foreach ($idealResume->educations as $education) {
+            $weight = $education->pivot->weight;
+            // Supongamos que cada criterio educativo tiene una puntuación máxima de 10, ajusta según tu aplicación
+            $maxScore += 12 * $weight;
+        }
+        
+        return $maxScore;
     }
     
     private function calculateAffinityScore($resume, $idealResume) {
         $score = 0;
     
-        // Incrementa el puntaje si el área de trabajo, sub área, país, estado y ciudad coinciden.
-        //$score += ($resume->user->job_area == $idealResume->job_area) ? 10 : 0;
-        //$score += ($resume->user->job_sub_area == $idealResume->job_sub_area) ? 5 : 0;
-        if ($resume->experiences->isNotEmpty()){
-        foreach ($resume->experiences as $experience) {
-            similar_text(strtolower($experience->job_area), strtolower($idealResume->replacement->job_area), $percent);
-            if($percent >= 80){
+        
+        if ($idealResume->replacement->min_experience > 0 && ($resume->experiences->isNotEmpty())) {
+            
+            foreach ($resume->experiences as $experience) { 
                 
-                $startDateStr = $experience->start_date;
-                $finishDateStr = $experience->finish_date;
-
-                $startDate = \Carbon\Carbon::parse($startDateStr);
-                $finishDate = \Carbon\Carbon::parse($finishDateStr);
-
-                if ($startDate && $finishDate) {
-                    $monthsDifference = $startDate->diffInMonths($finishDate);
-
-                    // Comparar la diferencia en meses con la experiencia mínima deseada
-                    if ($monthsDifference >= $idealResume->replacement->min_experience) {
-
-                        
-                        $score = $score + 3 + ($monthsDifference - $idealResume->replacement->min_experience);
+                similar_text(strtolower($experience->job_area), strtolower($idealResume->replacement->job_area), $percent);
+                if ($percent >= 80) {
+                    
+                    $startDateStr = $experience->start_date;
+                    $finishDateStr = $experience->finish_date;
+        
+                    $startDate = \Carbon\Carbon::parse($startDateStr);
+                    $finishDate = \Carbon\Carbon::parse($finishDateStr);
+        
+                    if ($startDate && $finishDate) {
+                        $monthsDifference = $startDate->diffInMonths($finishDate);
+                        if ($monthsDifference >= $idealResume->replacement->min_experience) {
+                            // Aquí se multiplica la puntuación base por la ponderación de la experiencia
+                            $score += 3   * ($idealResume->experience_weight);
+                        }
                     }
+                } elseif ($percent >= 60 && $percent < 80) {
+                    
+                    $startDate = $experience->start_date;
+                    $finishDate = $experience->finish_date;
+        
+                    if ($startDate && $finishDate) {
+                        $monthsDifference = $startDate->diffInMonths($finishDate);
+                        if ($monthsDifference >= $idealResume->replacement->min_experience) {
+                            // Igualmente, se multiplica la puntuación base por la ponderación de la experiencia
+                            $score += 6 * ($idealResume->experience_weight);
+                        }
+                    }
+                } elseif ($resume->experiences->isEmpty() && ($idealResume->replacement->min_experience > 0)) {
+                    
+                    $score -= 3 * ($idealResume->replacement->experience_weight); 
                 }
             }
-            elseif($percent >= 60 && $percent<80){
                 
-                $startDate = $experience->start_date;
-                $finishDate = $experience->finish_date;
-
-                if ($startDate && $finishDate) {
-                    $monthsDifference = $startDate->diffInMonths($finishDate);
-
-                    // Comparar la diferencia en meses con la experiencia mínima deseada
-                    if ($monthsDifference >= $idealResume->replacement->min_experience) {
-                        $score += 2;
-                    }
-                }
             }
+        
+        
+
+        switch ($idealResume->replacement->modality) {
+            case 'Presencial':
+                $score += (strtolower($resume->user->state) == strtolower($idealResume->replacement->state)) ? 2 : 0;
+                $score += (strtolower($resume->user->province) == strtolower($idealResume->replacement->province)) ? 4 : 0;
+                $score += (strtolower($resume->user->city) == ($idealResume->replacement->city)) ? 6 : 0;
+                break;
+            case 'Virtual':
+                // Sin puntaje para virtual
+                $score += 0;
+                break;
+            case 'Hibrido':
+                // Mitad de puntaje para híbrido
+                $score += (strtolower($resume->user->state) == strtolower($idealResume->replacement->state)) ? 1 : 0;
+                $score += (strtolower($resume->user->province) == strtolower($idealResume->replacement->province)) ? 2 : 0;
+                $score += (strtolower($resume->user->city) == ($idealResume->replacement->city)) ? 3 : 0;
+                break;
         }
-    }
-    elseif($resume->experiences->isEmpty()){
-        $score -= 3;
-    }
-
-        $score += (strtolower($resume->user->country) == strtolower($idealResume->country)) ? 3 : 0;
-        $score += (strtolower($resume->user->state) == strtolower($idealResume->state)) ? 2 : 0;
-        $score += (strtolower($resume->user->city) == ($idealResume->city)) ? 1 : 0;
-    
         // Compara lenguajes, habilidades y educación.
+        
         $score += $this->compareLanguages($resume->languages, $idealResume->languages);
         $score += $this->compareSkills($resume->skills, $idealResume->skills);
         $score += $this->compareEducation($resume->educations, $idealResume->educations);
     
-        return $score;
+            return $score;
     }
     
     private function compareLanguages($candidateLanguages, $idealLanguages) {
+        
         $score = 0;
+        $baseScore = 0;
+        $extraScoreForExactMatch = 0;
+        $extraScoreForHigherLevel = 0;
+
         foreach ($idealLanguages as $idealLanguage) {
+            $weight = $idealLanguage->pivot->weight;
             foreach ($candidateLanguages as $candidateLanguage) {
-                if (preg_match("/".preg_quote($idealLanguage->name, '/')."/i", $candidateLanguage->name)) {
+                // Compara si los nombres de los idiomas son iguales
+                if (strtolower($idealLanguage->name) == strtolower($candidateLanguage->name)) {
+                    $baseScore += 7; // Puntuación base por coincidencia de nombre
                     
-                    $score = 3;
-
+                    // Puntuación adicional por coincidencia exacta de nivel
+                    if ($candidateLanguage->pivot->written_level == $idealLanguage->pivot->written_level &&
+                        $candidateLanguage->pivot->oral_level == $idealLanguage->pivot->oral_level) {
+                        $extraScoreForExactMatch += 5; // Ajusta el 5 al valor que desees para coincidencia exacta
+                    }
                     
-
-                    if ($this->languageLevelHigherThan($candidateLanguage->written_level, $idealLanguage->written_level)) {
-                        
-                        $score += 2;
-                    } else if ($candidateLanguage->written_level == $idealLanguage->written_level) {
-                        
-                        $score += 1;
+                    // Puntuación adicional por niveles superiores
+                    if ($this->languageLevelHigherThan($candidateLanguage->pivot->written_level, $idealLanguage->pivot->written_level) &&
+                        $this->languageLevelHigherThan($candidateLanguage->pivot->oral_level, $idealLanguage->pivot->oral_level)) {
+                        $extraScoreForHigherLevel += 6; // Ajusta el 7 al valor que desees para niveles superiores
                     }
-
-                    if ($this->languageLevelHigherThan($candidateLanguage->oral_level, $idealLanguage->oral_level)) {
-                        
-                        $score += 2;
-                    } else if ($candidateLanguage->oral_level == $idealLanguage->oral_level) {
-                        
-                        $score += 1;
-                    }
-
-
-                                }
-                            }
-                        }
+                }
+                $score = ($baseScore + $extraScoreForExactMatch + $extraScoreForHigherLevel) * $weight;
+            }
+        }
+        
         return $score;
     }
+    
 
     function languageLevelHigherThan($level1, $level2) {
         // Define el orden de los niveles de habilidad desde el más bajo al más alto
@@ -421,60 +567,47 @@ class ReplacementController extends Controller
     private function compareSkills($candidateSkills, $idealSkills) {
         $score = 0;
         foreach ($idealSkills as $idealSkill) {
+            $weight = $idealSkill->pivot->weight;
             foreach ($candidateSkills as $candidateSkill) {
-                if ($candidateSkill->name == $idealSkill->name) {
-                    $score += 2; // Supongamos que cada habilidad coincide vale 5 puntos.
-                }
-                elseif (strpos($candidateSkill->name, $idealSkill->name) !== false || strpos($idealSkill->name,$candidateSkill->name) !== false) {
-                    $score += 1;
-                }
+                
+
+                $score += (strcasecmp($candidateSkill->name, $idealSkill->name) == 0 ? 12 : 0)*$weight;
             }
         }
+
         return $score;
     }
     
     private function compareEducation($candidateEducation, $idealEducation) {
         $score = 0;
-        
+    
         foreach ($idealEducation as $idealEdu) {
+            $weight = $idealEdu->pivot->weight;
             foreach ($candidateEducation as $candidateEdu) {
-                similar_text(strtolower($candidateEdu->career), strtolower($idealEdu->career), $percentcareer);
-                if($percentcareer == 100){
-                    if($candidateEdu->type_of_study == $idealEdu->type_of_study && $candidateEdu->status == $idealEdu->status){
-                        $score += 10;
-                    }
-                    elseif($candidateEdu->type_of_study == $idealEdu->type_of_study){
-                        $score += 7;
-                    }
-                    else{
-                        $score += 8;
-                    }
-                }
-                elseif($percentcareer>=80){
-                    if($candidateEdu->type_of_study == $idealEdu->type_of_study && $candidateEdu->status == $idealEdu->status){
-                        $score += 7;
-                    }
-                    elseif($candidateEdu->type_of_study == $idealEdu->type_of_study){
-                        $score += 6;
-                    }
-                    else{
-                        $score += 5;
-                    }
-                }
-                elseif($percentcareer>=60 && $percentcareer<80){
-                    if($candidateEdu->type_of_study == $idealEdu->type_of_study && $candidateEdu->status == $idealEdu->status){
-                        $score += 4;
-                    }
-                    elseif($candidateEdu->type_of_study == $idealEdu->type_of_study){
-                        $score += 3;
-                    }
-                    else{
-                        $score += 2;
-                    }
-                }
-
                 
+                similar_text(strtolower($candidateEdu->career), strtolower($idealEdu->career), $percentCareer);
+            if ($percentCareer >= 60) {
+                $baseScore = ($percentCareer >= 80) ? 6 : 3;
+                $score += $baseScore ;
             }
+
+            
+            if (strcasecmp($candidateEdu->type_of_study, $idealEdu->type_of_study) == 0) {
+                $score += 2 ; 
+            }
+
+            // Compara el área de estudio
+            if (strcasecmp($candidateEdu->area_of_study, $idealEdu->area_of_study) == 0) {
+                $score += 2 ; 
+            }
+
+            // Compara la subárea de estudio
+            if (strcasecmp($candidateEdu->subarea_of_study, $idealEdu->subarea_of_study) == 0) {
+                $score += 2; 
+            }
+
+            }
+            $score = $score * $weight;
         }
         return $score;
     }

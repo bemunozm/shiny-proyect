@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('verifier_code', 1);
             $table->string('street_name');
             $table->integer('number');
-            $table->bigInteger('zip_code');
+            $table->string('city');
             $table->bigInteger('phone')->nullable();
             $table->string('industry');
             $table->unsignedBigInteger('user_id');

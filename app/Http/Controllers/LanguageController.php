@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Language;
 use App\Models\Resume;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LanguageController extends Controller
 {
@@ -28,18 +29,34 @@ class LanguageController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        $user_id = $request->input('user_id');
-        $resume = Resume::where('user_id', $user_id)->first();
+{
+    $user_id = $request->input('user_id');
+    $languageName = $request->input('language_name');
+    $written_level = $request->input('written_level');
+    $oral_level = $request->input('oral_level');
 
-        Language::create([
-            'name' => $request->name,
-            'written_level' => $request->written_level,
-            'oral_level' => $request->oral_level,
-            'resume_id' => $resume->id,
+    $resume = Resume::where('user_id', $user_id)->firstOrFail();
+
+    // Busca si ya existe el idioma, si no, lo crea.
+    $language = Language::firstOrCreate(['name' => $languageName]);
+
+    // Asignar el idioma al currículum del usuario si aún no está asignado, junto con los niveles de habilidad.
+    $languageEntry = $resume->languages()->find($language->id);
+    if (!$languageEntry) {
+        $resume->languages()->attach($language->id, [
+            'written_level' => $written_level,
+            'oral_level' => $oral_level
         ]);
-        return redirect()->route('user-profile.index');
+    } else {
+        // Si ya está asignado, pero deseas actualizar los niveles de habilidad, puedes usar updateExistingPivot
+        $resume->languages()->updateExistingPivot($language->id, [
+            'written_level' => $written_level,
+            'oral_level' => $oral_level
+        ]);
     }
+
+    return redirect()->route('user-profile.index');
+}
 
     /**
      * Display the specified resource.
@@ -68,10 +85,11 @@ class LanguageController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($languageId)
     {
-        $var = Language::find($id);
-        $var->delete();
-        return redirect()->route('user-profile.index');
+        // Encuentra el registro de la tabla pivote por su ID y elimínalo
+    $pivot = DB::table('language_resume')->where('id', $languageId)->delete();
+
+    return redirect()->route('user-profile.index');
     }
 }

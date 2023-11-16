@@ -5,14 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Skill extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'resume_id'];
+    protected $fillable = ['name'];
 
-    public function resume(): BelongsTo{
-        return $this->belongsTo(Resume::class);
+    public function resumes(): BelongsToMany{
+        return $this->belongsToMany(Resume::class)->withPivot('id', 'weight');
     }
 }

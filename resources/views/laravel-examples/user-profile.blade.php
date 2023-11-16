@@ -2,6 +2,87 @@
 
 @section('content')
 
+<script>
+$(document).ready(function() {
+    // Inicializar los distintos conjuntos de selectores
+    initializeSelectorSet(1);
+    initializeSelectorSet(2);
+    // Puedes agregar más si es necesario
+
+    // Función para inicializar cada conjunto de selectores
+    function initializeSelectorSet(setNumber) {
+        loadStates(`#state_select_${setNumber}`);
+
+        $(`#state_select_${setNumber}`).change(function() {
+            var stateId = $(this).val();
+            if (stateId) {
+                loadProvinces(stateId, `#province_select_${setNumber}`);
+            } else {
+                $(`#province_select_${setNumber}`).empty().append('<option value="">Seleccione una provincia</option>');
+                $(`#city_select_${setNumber}`).empty().append('<option value="">Seleccione una ciudad</option>');
+            }
+        });
+
+        $(`#province_select_${setNumber}`).change(function() {
+            var provinceId = $(this).val();
+            if (provinceId) {
+                loadCities(provinceId, `#city_select_${setNumber}`);
+            } else {
+                $(`#city_select_${setNumber}`).empty().append('<option value="">Seleccione una ciudad</option>');
+            }
+        });
+    }
+
+    // Función para cargar las regiones
+    function loadStates(selector) {
+        $.ajax({
+            url: "{{ route('searchState') }}",
+            dataType: "json",
+            success: function(data) {
+                var stateSelect = $(selector);
+                stateSelect.empty().append('<option value="">Seleccione una región</option>');
+                $.each(data, function(i, item) {
+                    stateSelect.append(new Option(item.name, item.id));
+                });
+            }
+        });
+    }
+
+    // Función para cargar las provincias
+    function loadProvinces(stateId, selector) {
+        $.ajax({
+            url: "/search-province",
+            type: "GET",
+            dataType: "json",
+            data: { region_id: stateId },
+            success: function(data) {
+                var provinceSelect = $(selector);
+                provinceSelect.empty().append('<option value="">Seleccione una provincia</option>');
+                $.each(data, function(i, item) {
+                    provinceSelect.append(new Option(item.name, item.id));
+                });
+            }
+        });
+    }
+
+    // Función para cargar las ciudades
+    function loadCities(provinceId, selector) {
+        $.ajax({
+            url: "{{ route('searchCity') }}",
+            dataType: "json",
+            data: { province_id: provinceId },
+            success: function(data) {
+                var citySelect = $(selector);
+                citySelect.empty().append('<option value="">Seleccione una ciudad</option>');
+                $.each(data, function(i, item) {
+                    citySelect.append(new Option(item.name, item.id));
+                });
+            }
+        });
+    }
+});
+
+</script>
 
 <div>
     <div class="container-fluid">
@@ -51,7 +132,7 @@
                                         </g>
                                     </svg>
 
-                                    </svg>
+                                  
                                     <span class="ms-1">{{ __('Educacion') }}</span>
                                 </a>
                             </li>
@@ -71,7 +152,7 @@
                                         </g>
                                     </svg>
 
-                                    </svg>
+                                 
                                     <span class="ms-1">{{ __('Habilidad') }}</span>
 
                             <li class="nav-item">
@@ -90,7 +171,7 @@
                                         </g>
                                     </svg>
 
-                                    </svg>
+                                   
                                     <span class="ms-1">{{ __('Idioma') }}</span>
                                 </a>
                             </li>
@@ -110,7 +191,7 @@
                                         </g>
                                     </svg>
 
-                                    </svg>
+                                    
                                     <span class="ms-1">{{ __('Experiencia') }}</span>
                                 </a>
                             </li>
@@ -132,7 +213,6 @@
                                         </g>
                                     </svg>
 
-                                    </svg>
                                     <span class="ms-1">{{ __('Perfil') }}</span>
                                 </a>
                             </li>
@@ -143,9 +223,6 @@
                 </div>
                 <div class="container-fluid py-4">
                     <div class="tab-content">
-
-                    
-                        
                         <div class="tab-pane active show" id="educacion-panel">
                             <div class="card">
                                 <div class="card-header pb-0 px-3">
@@ -157,6 +234,7 @@
                                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sumarEducacionModal">
                                         + Sumar Educación
                                        </button>
+                                       
                                     @endif
                                     
                                     @if ($resume->educations->isNotEmpty())
@@ -192,9 +270,9 @@
                                                     </td>
                                                     <td class="align-middle text-center">
                                                         <div class="d-flex align-items-center">
-                                                        @if ($education->status == 'Finalizado')
+                                                        @if ($education->pivot->status == 'Finalizado')
                                                             <span class="badge badge-sm bg-gradient-success">Finalizado</span>
-                                                        @elseif($education->status == 'En Curso')
+                                                        @elseif($education->pivot->status == 'En Curso')
                                                             <span class="badge bg-gradient-warning">En Curso</span>
                                                         @else
                                                             <span class="badge bg-gradient-danger">Abandonado</span>
@@ -210,7 +288,7 @@
                                                         </button>--}}
                                                         
                                                         
-                                                        <form method="POST" action="{{route('user-education.destroy', $education->id)}}">
+                                                        <form method="POST" action="{{route('user-education.destroy', $education->pivot->id)}}">
                                                             @csrf
                                                             @method('DELETE')
                                                             <input class="btn btn-link text-secondary mb-0" type="submit" value="Eliminar"/>
@@ -248,7 +326,7 @@
                                             @foreach ($resume->skills as $skill)
                                                  <!-- Agrega márgenes entre los elementos -->
                                                     @if ($current_id == $id->id)
-                                                        <form method="POST" action="{{ route('user-skills.destroy', $skill->id) }}">
+                                                        <form method="POST" action="{{ route('user-skills.destroy', $skill->pivot->id) }}">
                                                             @csrf
                                                             @method('DELETE')
                                                             <div class="row">
@@ -317,19 +395,19 @@
                                                 <td>
                                                     <span class="badge badge-dot me-4">
                                                         <i class="bg-info"></i>
-                                                        <span class="text-dark text-xs">{{$language->written_level}}</span>
+                                                        <span class="text-dark text-xs">{{$language->pivot->written_level}}</span>
                                                         </span>
                                                 </td>
                                                 <td>
                                                     <span class="badge badge-dot me-4">
                                                     <i class="bg-info"></i>
-                                                    <span class="text-dark text-xs">{{$language->oral_level}}</span>
+                                                    <span class="text-dark text-xs">{{$language->pivot->oral_level}}</span>
                                                     </span>
                                                 </td>
 
                                                 @if ($current_id == $id->id)
                                                 <td class="align-middle">
-                                                    <form method="POST" action="{{route('user-language.destroy', $language->id)}}">
+                                                    <form method="POST" action="{{route('user-language.destroy', $language->pivot->id)}}">
                                                         @csrf
                                                         @method('DELETE')
                                                         <input class="btn btn-link text-secondary mb-0" type="submit" value="Eliminar"/>
@@ -425,11 +503,11 @@
                         
                 
                         <div class="tab-pane fade" id="perfil-panel">
-                    <div class="card">
-                        <div class="card-header pb-0 px-3">
+                            <div class="card">
+                            <div class="card-header pb-0 px-3">
                             <h6 class="mb-0">{{ __('Perfil') }}</h6>
-                        </div>
-                        <div class="card-body pt-4 p-3">
+                            </div>
+                            <div class="card-body pt-4 p-3">
                             <!-- Formulario para Perfil -->
                             @if ($current_id == $id->id)
                             <form action="{{route('user-profile.update', $id)}}" method="POST">
@@ -508,31 +586,42 @@
                                         </div>
                                     </div>
                                 </div>
-                                <br/><h5>Informacion Residencia</h5><br/>
+                        
+                  
+                                
                                 {{--INFORMACION DE RESIDENCIA--}}
+                                <br/><h5>Informacion de Residencia</h5><br/>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="country">{{ __('Pais') }}</label>
-                                            
-                                            <input type="text" id="country" name="country" class="form-control" value="{{$id->country}}" placeholder="Chile">
+                                            <label for="state_select">{{ __('Region') }}</label>
+                                            <select id="state_select_2" name="state_name" class="form-control">
+                                                <option value="">Seleccione una región</option>
+                                                <!-- Las opciones se llenarán dinámicamente -->
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="state">{{ __('Region') }}</label>
-                                            <input type="text" id="state" name="state" class="form-control" value="{{$id->state}}" placeholder="Tarapaca">
+                                            <label for="province_select">{{ __('Provincia') }}</label>
+                                            <select id="province_select_2" name="province_name" class="form-control">
+                                                <option value="">Seleccione una provincia</option>
+                                                <!-- Las opciones se llenarán dinámicamente -->
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="city">{{ __('Ciudad') }}</label>
-                                            <input type="text" id="city" name="city" class="form-control" value="{{$id->city}}" placeholder="Iquique">
+                                            <label for="city_select">{{ __('Ciudad') }}</label>
+                                            <select id="city_select_2" name="city_name" class="form-control">
+                                                <option value="">Seleccione una ciudad</option>
+                                                <!-- Las opciones se llenarán dinámicamente -->
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
 
-                                <br/><h5>Otra Informacion</h5><br/>
+                                    
                                 {{--OTRA INFORMACION--}}
                                 <div class="row">
                                     <div class="col-md-6">
@@ -578,10 +667,10 @@
                             <h5>Información de Residencia</h5>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <p><strong>País:</strong> {{ $id->country }}</p>
+                                    <p><strong>Región:</strong> {{ $id->state }}</p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p><strong>Región:</strong> {{ $id->state }}</p>
+                                    <p><strong>Provincia:</strong> {{ $id->province }}</p>
                                 </div>
                                 <div class="col-md-6">
                                     <p><strong>Ciudad:</strong> {{ $id->city }}</p>
@@ -592,9 +681,243 @@
                     </div>
                 </div>
 
+                <script>
+                    $(document).ready(function() {
+    // Autocompletado para 'career'
+    $('#career').autocomplete({
+        source: function(request, response) {
+            $.ajax({
+                url: "{{ route('searchCareer') }}",
+                dataType: "json",
+                data: {
+                    term: request.term
+                },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return { label: item.career, value: item.career };
+                    }));
+                }
+            });
+        },
+        minLength: 2,
+        open: function() {
+            $(this).autocomplete('widget').css('z-index', 1050);
+            $('.ui-autocomplete').appendTo('body');
+        },
+        select: function(event, ui) {
+            var selectedCareer = ui.item.value;
+            updateInstitutionSelect(selectedCareer); // Actualiza el select de instituciones
+        }
+    });
 
-                
+    // Función para actualizar el select de 'institution' basado en la carrera seleccionada
+    function updateInstitutionSelect(selectedCareer) {
+        $.ajax({
+            url: "{{ route('searchInstitution') }}", // Asegúrate de que esta ruta sea correcta
+            dataType: "json",
+            data: {
+                career: selectedCareer
+            },
+            success: function(data) {
+                var institutionSelect = $('#institution');
+                institutionSelect.empty(); // Limpia las opciones existentes
+                institutionSelect.append($('<option>', {
+                    value: '',
+                    text: 'Seleccione una institución'
+                }));
 
+                // Agrega nuevas opciones al select de instituciones
+                $.each(data, function(index, item) {
+                    institutionSelect.append($('<option>', {
+                        value: item.institution,
+                        text: item.institution
+                    }));
+                });
+            }
+        });
+    }
+});
+
+$(document).ready(function() {
+    // ... Código existente para autocompletado de carrera ...
+
+    // Función para actualizar el select de 'type_of_study'
+    function updateTypeOfStudySelect() {
+        var selectedCareer = $('#career').val();
+        var selectedInstitution = $('#institution').val();
+
+        $.ajax({
+            url: "{{ route('searchTypeOfStudy') }}",
+            dataType: "json",
+            data: {
+                career: selectedCareer,
+                institution: selectedInstitution
+            },
+            success: function(data) {
+                var typeOfStudySelect = $('#type_of_study');
+                typeOfStudySelect.empty(); // Limpia las opciones existentes
+                typeOfStudySelect.append($('<option>', {
+                    value: '',
+                    text: 'Seleccione un tipo de estudio'
+                }));
+
+                // Agrega nuevas opciones al select de 'type_of_study'
+                $.each(data, function(index, item) {
+                    typeOfStudySelect.append($('<option>', {
+                        value: item.type_of_study,
+                        text: item.type_of_study
+                    }));
+                });
+            }
+        });
+    }
+
+    // Llama a 'updateTypeOfStudySelect' cuando cambien los campos de carrera o institución
+    $('#career, #institution').change(updateTypeOfStudySelect);
+});
+
+
+
+
+$(document).ready(function() {
+    // ... Código existente ...
+
+    // Función para actualizar el select de 'area_of_study'
+    function updateAreaOfStudySelect() {
+        var selectedCareer = $('#career').val();
+        var selectedInstitution = $('#institution').val();
+        var selectedTypeOfStudy = $('#type_of_study').val();
+
+        $.ajax({
+            url: "{{ route('searchArea') }}",
+            dataType: "json",
+            data: {
+                career: selectedCareer,
+                institution: selectedInstitution,
+                type_of_study: selectedTypeOfStudy
+            },
+            success: function(data) {
+                var areaOfStudySelect = $('#area_of_study');
+                areaOfStudySelect.empty(); // Limpia las opciones existentes
+                areaOfStudySelect.append($('<option>', {
+                    value: '',
+                    text: 'Seleccione un área de estudio'
+                }));
+
+                // Agrega nuevas opciones al select de 'area_of_study'
+                $.each(data, function(index, item) {
+                    areaOfStudySelect.append($('<option>', {
+                        value: item.area_of_study,
+                        text: item.area_of_study
+                    }));
+                });
+            }
+        });
+    }
+
+    // Actualizar 'area_of_study' cuando cambien los campos relevantes
+    $('#career, #institution, #type_of_study').change(updateAreaOfStudySelect);
+});
+
+
+
+$(document).ready(function() {
+    // ... Código existente ...
+
+    // Función para actualizar el select de 'subarea_of_study'
+    function updateSubareaOfStudySelect() {
+        var selectedCareer = $('#career').val();
+        var selectedInstitution = $('#institution').val();
+        var selectedTypeOfStudy = $('#type_of_study').val();
+        var selectedAreaOfStudy = $('#area_of_study').val();
+
+        $.ajax({
+            url: "{{ route('searchSubarea') }}",
+            dataType: "json",
+            data: {
+                career: selectedCareer,
+                institution: selectedInstitution,
+                type_of_study: selectedTypeOfStudy,
+                area_of_study: selectedAreaOfStudy
+            },
+            success: function(data) {
+                var subareaOfStudySelect = $('#subarea_of_study');
+                subareaOfStudySelect.empty(); // Limpia las opciones existentes
+                subareaOfStudySelect.append($('<option>', {
+                    value: '',
+                    text: 'Seleccione un subárea de estudio'
+                }));
+
+                // Agrega nuevas opciones al select de 'subarea_of_study'
+                $.each(data, function(index, item) {
+                    subareaOfStudySelect.append($('<option>', {
+                        value: item.subarea_of_study,
+                        text: item.subarea_of_study
+                    }));
+                });
+            }
+        });
+    }
+
+    // Actualizar 'subarea_of_study' cuando cambien los campos relevantes
+    $('#career, #institution, #type_of_study, #area_of_study').change(updateSubareaOfStudySelect);
+});
+
+
+                    
+                    </script>
+                    
+                    {{--NO BORRAR--}}
+                    <script>
+
+                        $(document).ready(function() {
+                            $('#skill_name').autocomplete({
+                                source: function(request, response) {
+                                    $.ajax({
+                                        url: "{{ route('searchSkill') }}",
+                                        dataType: "json",
+                                        data: {
+                                            term: request.term,
+                                        },
+                                        success: function(data) {
+                                            response($.map(data, function(item) {
+                                                return { label: item.name, value: item.name };
+                                            }));
+                                        }
+                                    });
+                                },
+                                minLength: 2,
+                                open: function() {
+                                    $(this).autocomplete('widget').css('z-index', 1050);
+                                    $('.ui-autocomplete').appendTo('body');
+                                }
+                            });
+                        });
+
+                        $(document).ready(function() {
+                            $('#language_name').autocomplete({
+                                source: function(request, response) {
+                                    $.ajax({
+                                        url: "{{ route('searchLanguage') }}",
+                                        dataType: "json",
+                                        data: {
+                                            term: request.term,
+                                        },
+                                        success: function(data) {
+                                            response($.map(data, function(item) {
+                                                return { label: item.name, value: item.name };
+                                            }));
+                                        }
+                                    });
+                                },
+                                minLength: 2,
+                                open: function() {
+                                    $(this).autocomplete('widget').css('z-index', 1050);
+                                    $('.ui-autocomplete').appendTo('body');
+                                }
+                            });
+                        });
+                    </script>
 @endsection
 
 
@@ -621,10 +944,22 @@
                   <div class="col-md-4">
                       <label for="company_activity" class="form-label">Actividad de la empresa</label>
                       <select id="company_activity" name="company_activity" class="form-control">
-                          <option value="administracion">Administración</option>
-                          <option value="agropecuario">Agropecuario</option>
-                          <option value="alimenticia">Alimenticia</option>
-
+                            <option value="Administracion">Administración</option>
+                            <option value="Agropecuario">Agropecuario</option>
+                            <option value="Alimenticia">Alimenticia</option>
+                            <option value="Ingenieria">Ingenieria</option>
+                            <option value="Arquitectura">Arquitectura</option>
+                            <option value="Agronomia">Agronomía</option>
+                            <option value="Audiovisual">Audiovisual</option>
+                            <option value="Comercio">Comercio</option>
+                            <option value="Educacion">Educación</option> 
+                            <option value="Hosteleria">Hostelería</option> 
+                            <option value="Logistica">Logística</option> 
+                            <option value="Medicina">Medicina</option> 
+                            <option value="Salud">Salud</option> 
+                            <option value="Tecnologia">Tecnología</option> 
+                            <option value="Transporte">Transporte</option>
+                            <option value="Mineria">Mineria</option>
                       </select>
                   </div>
                   <div class="col-md-4">
@@ -638,42 +973,80 @@
                   <div class="col-md-4">
                       <label for="job_area" class="form-label">Área del puesto</label>
                       <select id="job_area" name="job_area" class="form-control">
-                          <option value="abastecimiento">Abastecimiento</option>
-                          <option value="logistica">Logística</option>
+                          <option value="Abastecimiento">Abastecimiento</option>
+                          <option value="Logistica">Logística</option>
+                          <option value="Gestion">Gestión</option> 
+                          <option value="Marketing">Marketing</option> 
+                          <option value="Comercial">Comercial</option> 
+                          <option value="Tecnico">Técnico</option> 
+                          <option value="Produccion">Producción</option> 
+                          <option value="Ventas">Ventas</option> 
+                          <option value="Recursos humanos">Recursos Humanos</option> 
+                          <option value="Calidad">Calidad</option> 
+                          <option value="Administracion">Administración</option>
+                          <option value="Ingenieria">Ingenieria</option>
                       </select>
                   </div>
                   <div class="col-md-4">
                       <label for="job_sub_area" class="form-label">Subárea</label>
                       <select id="job_sub_area" name="job_sub_area" class="form-control">
-                          <option value="abastecimiento">Abastecimiento</option>
-                          <option value="logistica">Logística</option>
+                          <option value="Abastecimiento">Abastecimiento</option>
+                          <option value="Logistica">Logística</option>
+                          <option value="Gestion">Gestión</option> 
+                          <option value="Marketing">Marketing</option> 
+                          <option value="Comercial">Comercial</option> 
+                          <option value="Tecnico">Técnico</option> 
+                          <option value="Produccion">Producción</option> 
+                          <option value="Ventas">Ventas</option> 
+                          <option value="Recursos humanos">Recursos Humanos</option> 
+                          <option value="Calidad">Calidad</option> 
+                          <option value="Administracion">Administración</option>
+                          <option value="Informatica">Informatica</option>
                       </select>
                   </div>
               </div>
 
               <div class="row mt-3">
                   <div class="col-md-4">
-                      <label for="country" class="form-label">País</label>
-                      <input type="text" class="form-control" id="country" name="country">
+                      <label for="state" class="form-label">Region</label>
+                      <select class="form-control" id="state_select_1" name="state_name">
+                        <option value="">Seleccione una región</option>
+                        <!-- Las opciones se llenarán dinámicamente -->
+                    </select>
                   </div>
                   <div class="col-md-4">
-                      <label class="form-label">Fecha de inicio</label>
-                      <div class="row">
-                          <div class="col-6">
-                              <input type="date" name="start_date" class="form-control" placeholder="Fecha">
-                          </div>
-                      </div>
+                    <label for="province" class="form-label">Provincia</label>
+                    <select class="form-control" id="province_select_1" name="province_name">
+                        <option value="">Seleccione una provincia</option>
+                        <!-- Las opciones se llenarán dinámicamente -->
+                    </select>
+                </div>
+                <div class="col-md-4">
+                      <label for="city" class="form-label">City</label>
+                      <select class="form-control" id="city_select_1" name="city_name">
+                        <option value="">Seleccione una ciudad</option>
+                        <!-- Las opciones se llenarán dinámicamente -->
+                    </select>
                   </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Fecha de finalización</label>
+              </div>
+              <div class="row mt-3">
+                <div class="col-md-4">
+                    <label class="form-label">Fecha de inicio</label>
                     <div class="row">
                         <div class="col-6">
-                            <input type="date" name="finish_date" class="form-control" placeholder="Fecha" max="{{ date('Y-m-d') }}" value="{{ $fechaActual->format('Y-m-d') }}">
+                            <input type="date" name="start_date" class="form-control" placeholder="Fecha">
                         </div>
                     </div>
                 </div>
+                <div class="col-md-4">
+                  <label class="form-label">Fecha de finalización</label>
+                  <div class="row">
+                      <div class="col-6">
+                          <input type="date" name="finish_date" class="form-control" placeholder="Fecha" max="{{ date('Y-m-d') }}" value="{{ $fechaActual->format('Y-m-d') }}">
+                      </div>
+                  </div>
               </div>
-
+              </div>
               <div class="mt-3">
                     <label class="form-label">Persona a cargo:</label>
                         <div class="row">
@@ -731,41 +1104,50 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="career" class="form-label">Título o Carrera*</label>
-                            <input type="text" id="career" name="career" placeholder="" class="form-control" />
+                            <input type="text" class="form-control" id="career" name="career">
                         </div>
-                        <!-- País -->
-                        <div class="col-md-6 mb-3">
-                            <label for="country" class="form-label">País*</label>
-                            <input type="text" class="form-control" id="country" name="country" required>
+                    <!-- Institución -->
+                    <div class="mb-3">
+                        <label for="institution" class="form-label">Institución*</label>
+                        <select class="form-control" id="institution" name="institution" required>
+                            <option value="">Seleccione una institución</option>
+                            <!-- Las opciones se llenarán dinámicamente -->
+                        </select>
+                    </div>
+                    
+                        <div class="mb-3">
+                            <label for="type_of_study" class="form-label">Tipo de Estudio*</label>
+                            <select class="form-control" id="type_of_study" name="type_of_study" required>
+                                <option value="">Seleccione un tipo de estudio</option>
+                                <!-- Las opciones se llenarán dinámicamente -->
+                            </select>
                         </div>
                     </div>
                     <!-- Tipo de Estudio -->
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="type_of_study" class="form-label">Tipo de Estudio*</label>
-                            <select class="form-control" id="type_of_study" name="type_of_study" required>
-                                <option value="Pregrado">Pregrado</option>
-                                <option value="Maestría">Maestría</option>
-                                <option value="Doctorado">Doctorado</option>
-                            </select>
-                        </div>
+                        
                         <!-- Área de Estudio -->
                         <div class="col-md-6 mb-3">
                             <label for="area_of_study" class="form-label">Área de Estudio*</label>
                             <select class="form-control" id="area_of_study" name="area_of_study" required>
-                                <option value="Ciencias">Ciencias</option>
-                                <option value="Artes">Artes</option>
-                                <option value="Humanidades">Humanidades</option>
-                                <option value="Ingeniería">Ingeniería</option>
-                                <!-- Otros -->
+                                <option value="">Seleccione un área de estudio</option>
+                                <!-- Las opciones se llenarán dinámicamente -->
                             </select>
                         </div>
+
+
+
+                        <div class="col-md-6 mb-3">
+                            <label for="subarea_of_study" class="form-label">Subárea de Estudio</label>
+                            <select class="form-control" id="subarea_of_study" name="subarea_of_study" required>
+                                <option value="">Seleccione un subárea de estudio</option>
+                                <!-- Las opciones se llenarán dinámicamente -->
+                            </select>
+                        </div>
+
                     </div>
-                    <!-- Institución -->
-                    <div class="mb-3">
-                        <label for="institution" class="form-label">Institución*</label>
-                        <input type="text" class="form-control" id="institution" name="institution" required>
-                    </div>
+                    
+
                     <!-- Estado -->
                     <div class="mb-3">
                         <label for="status" class="form-label">Estado*</label>
@@ -775,18 +1157,22 @@
                             <option value="Abandonado">Abandonado</option>
                         </select>
                     </div>
-                    <div class="row">
-                    <!-- Fecha de Inicio -->
                     <div class="col-md-3 mb-3">
                         <label for="start_date" class="form-label">Fecha de Inicio*</label>
-                        <input type="date" class="form-control" id="start_date" name="start_date" placeholder="Mes" required>
+                        <input type="date" class="form-control" id="start_date" name="start_date" max="{{ date('Y-m-d') }}" required>
                     </div>
-                    <!-- Fecha de Finalización -->
+
                     <div class="col-md-3 mb-3">
                         <label for="finish_date" class="form-label">Fecha de Finalizacion*</label>
-                        <input type="date" name="finish_date" class="form-control" placeholder="Fecha" max="{{ date('Y-m-d') }}" value="{{ $fechaActual->format('Y-m-d') }}">
+                        <input type="date" name="finish_date" id="finish_date" class="form-control" max="{{ date('Y-m-d') }}" required>
                     </div>
-                </div>
+
+                    <script>
+                        document.getElementById('start_date').addEventListener('change', function() {
+                            var startDate = this.value;
+                            document.getElementById('finish_date').setAttribute('min', startDate);
+                        });
+                    </script>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <input class="btn btn-primary" type="submit" value="Guardar"/>{{--<button type="button" class="btn btn-primary">Guardar</button>--}}
@@ -814,7 +1200,7 @@
           <!-- Campo para el nombre del idioma -->
           <div class="mb-3">
             <label for="name" class="form-label">Nombre del Idioma</label>
-            <input type="text" class="form-control" id="name" name="name" placeholder="Escribe el nombre del idioma">
+            <input type="text" class="form-control" id="language_name" name="language_name" placeholder="Escribe el nombre del idioma">
           </div>
 
           <!-- Selector para el nivel escrito -->
@@ -900,7 +1286,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="name" class="form-label">Habilidad</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        <input type="text" class="form-control" id="skill_name" name="skill_name" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -913,4 +1299,3 @@
 </div>
 
 
-  

@@ -14,9 +14,6 @@ return new class extends Migration
         Schema::create('languages', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('written_level', ['Basico', 'Intermedio', 'Avanzado', 'Nativo']);
-            $table->enum('oral_level', ['Basico', 'Intermedio', 'Avanzado', 'Nativo']);
-            $table->unsignedBigInteger('resume_id');
             $table->timestamps();
         });
     }

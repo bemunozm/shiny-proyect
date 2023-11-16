@@ -31,7 +31,7 @@
             <td class="text-xs font-weight-bold mb-0">{{ $application->job_name }}</td>
             <td class="text-xs font-weight-bold mb-0">{{ $application->job_area }}</td>
             <td class="text-xs font-weight-bold mb-0">{{ $application->job_sub_area }}</td>
-            <td class="text-xs font-weight-bold mb-0">{{ $application->city}},{{ $application->state }},{{ $application->country }}</td></td></td>
+            <td class="text-xs font-weight-bold mb-0">{{ $application->city}},{{ $application->province }},{{ $application->state }}</td></td></td>
             <td class="text-xs font-weight-bold mb-0">{{ $application->min_salary }} - {{ $application->max_salary }}</td>
             <td class="text-xs font-weight-bold mb-0">
               <form action="{{ route('eliminar.postulacion', $application->id) }}" method="POST">

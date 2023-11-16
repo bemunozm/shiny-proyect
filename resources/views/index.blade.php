@@ -18,9 +18,9 @@
                             
                         @else
                         <p class="mb-3">Aún no tienes avisos</p>
-                        <button type="button" class="btn bg-gradient-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                        <a type="button" class="btn bg-gradient-primary" href="{{route('replacement.create')}}">
                             Crear anuncio de trabajo
-                        </button>
+                        </a>
                         @endif
                         
                     </div>

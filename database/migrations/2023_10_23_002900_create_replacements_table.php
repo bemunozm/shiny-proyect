@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('job_name');
             $table->string('job_area');
             $table->string('job_sub_area');
-            $table->string('country');
+            $table->string('province');
             $table->string('state');
             $table->string('city');
             $table->string('address');

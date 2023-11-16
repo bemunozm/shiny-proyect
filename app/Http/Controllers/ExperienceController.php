@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comuna;
 use App\Models\Experience;
+use App\Models\Provincia;
+use App\Models\Region;
 use App\Models\Resume;
 use Illuminate\Http\Request;
 
@@ -29,17 +32,23 @@ class ExperienceController extends Controller
      */
     public function store(Request $request)
     {
+        
         $user_id = $request->input('user_id');
         $resume = Resume::where('user_id', $user_id)->first();
 
+        $provinceName = Provincia::find($request->input('province_name'))->provincia;
+        
+        $stateName = Region::find($request->input('state_name'))->region;
+        $cityName = Comuna::find($request->input('city_name'))->comuna;
         Experience::create([
             'company_name' => $request->company_name,
             'company_activity' => $request->company_activity,
             'job' => $request->job,
-            'work_experience' => $request->work_experience,
             'job_area' => $request->job_area,
             'job_sub_area' => $request->job_sub_area,
-            'country' => $request->country,
+            'province' => $provinceName,
+            'state' => $stateName,
+            'city' => $cityName,
             'start_date' => $request->start_date,
             'finish_date' => $request->finish_date,
             'description' => $request->description,

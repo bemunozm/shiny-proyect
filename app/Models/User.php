@@ -26,7 +26,7 @@ class User extends Authenticatable
         'last_name',
         'phone',
         'email',
-        'country',
+        'province',
         'state',
         'city',
         'gender',

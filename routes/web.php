@@ -51,13 +51,14 @@ Route::group(['middleware' => 'auth'], function () {
 		return view('curriculum');
 	})->name('curriculum');
 
-
+	
 
 	Route::get('/profile/{user}', [UserController::class, 'show'])->name('show-profile');
 
 	Route::get('company-profile', [CompanyController::class, 'profile'])->name('company-profile');
 	Route::put('user-company-profile-update/{id}', [UserController::class, 'update_company'])->name('company_update');
 
+	Route::get('/test', [Replacement::class, 'test']);
 
 	Route::get('postulaciones', function () {
 		return view('postulaciones');
@@ -110,7 +111,18 @@ Route::group(['middleware' => 'auth'], function () {
 	//Route::get('/user-profile', [InfoUserController::class, 'create']);
 	Route::get('/autocomplete/companies', [AutocompleteController::class, 'companies'])->name('api.companies.autocomplete');
 	//Route::post('/user-profile', [InfoUserController::class, 'store']);
-	Route::get('/autocomplete/user-education', [AutocompleteController::class, 'searchEducation']);
+	Route::get('/autocomplete/career', [AutocompleteController::class, 'searchCareer'])->name('searchCareer');
+	Route::get('/autocomplete/skill', [AutocompleteController::class, 'searchSkill'])->name('searchSkill');
+	Route::get('/autocomplete/language', [AutocompleteController::class, 'searchLanguage'])->name('searchLanguage');
+	Route::get('/autocomplete/institution', [AutocompleteController::class, 'searchInstitution'])->name('searchInstitution');
+	Route::get('/autocomplete/area_of_study', [AutocompleteController::class, 'searchArea'])->name('searchArea');
+	Route::get('/autocomplete/subarea_of_study', [AutocompleteController::class, 'searchSubarea'])->name('searchSubarea');
+	Route::get('/autocomplete/type_of_study', [AutocompleteController::class, 'searchTypeOfStudy'])->name('searchTypeOfStudy');
+	Route::get('/search-state', [AutocompleteController::class, 'searchState'])->name('searchState');
+	Route::get('/search-province', [AutocompleteController::class, 'searchProvince'])->name('searchProvince');
+	Route::get('/search-city', [AutocompleteController::class, 'searchCity'])->name('searchCity');
+
+	
 // Y así para los demás campos...
 	Route::get('/postulaciones', [UserController::class, 'showApplications'])->name('mis.postulaciones');
 	Route::delete('/eliminar-postulacion/{replacementId}', [ReplacementController::class, 'destroyApplication'])->name('eliminar.postulacion');

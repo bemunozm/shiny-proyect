@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('replacement_id');
             $table->unsignedBigInteger('resume_id');
-            $table->boolean('hired');
             $table->timestamps();
         });
     }

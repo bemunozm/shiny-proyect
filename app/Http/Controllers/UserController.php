@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comuna;
 use App\Models\Education;
 use App\Models\Experience;
+use App\Models\Provincia;
+use App\Models\Region;
 use App\Models\Resume;
 use App\Models\User;
 use Carbon\Carbon;
@@ -19,13 +22,14 @@ class UserController extends Controller
         $current_id = auth()->id();
         $id = User::find($current_id);
         $resume = Resume::where('user_id', $current_id)->first();
+        $education = Education::all();
         // Usando la función now()
         $fechaActual = now();
 
         // O usando Carbon::now()
         $fechaActual = Carbon::now();
         
-        return view('laravel-examples/user-profile', compact('resume', 'id', 'current_id', 'fechaActual'));
+        return view('laravel-examples/user-profile', compact('resume', 'id', 'current_id', 'fechaActual', 'education'));
     }
 
     /**
@@ -74,6 +78,10 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {  
         $user_id = User::find($id);
+        $provinceName = Provincia::find($request->input('province_name'))->provincia;
+        
+        $stateName = Region::find($request->input('state_name'))->region;
+        $cityName = Comuna::find($request->input('city_name'))->comuna;
         $user_id->update([
             'document_type' => $request->document_type,
             'document' => $request->document,
@@ -82,9 +90,9 @@ class UserController extends Controller
             'last_name' => $request->last_name,
             'phone' => $request->phone,
             'email' => $request->email,
-            'country' => $request->country,
-            'state' => $request->state,
-            'city' => $request->city,
+            'province' => $provinceName,
+            'state' => $stateName,
+            'city' => $cityName,
             'gender' => $request->gender,
             'birthdate' => $request->birthdate,
             'marital_status' => $request->marital_status
